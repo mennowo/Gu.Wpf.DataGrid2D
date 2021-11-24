@@ -23,6 +23,17 @@ namespace Gu.Wpf.DataGrid2D
                 OnTemplateChanged));
 
         /// <summary>
+        /// Gets or sets the path to use for sorting.
+        /// </summary>
+        public static readonly DependencyProperty SortMemberPathProperty = DependencyProperty.RegisterAttached(
+            "SortMemberPath",
+            typeof(string),
+            typeof(Cell),
+            new PropertyMetadata(
+                "",
+                OnSortMemberPathChanged));
+
+        /// <summary>
         /// Gets or sets the <see cref="DataTemplateSelector"/> to use when rendering cell contents.
         /// </summary>
         public static readonly DependencyProperty TemplateSelectorProperty = DependencyProperty.RegisterAttached(
@@ -86,6 +97,35 @@ namespace Gu.Wpf.DataGrid2D
             }
 
             return (DataTemplate)element.GetValue(TemplateProperty);
+        }
+        
+        /// <summary>Helper for setting <see cref="SortMemberPathProperty"/> on <paramref name="element"/>.</summary>
+        /// <param name="element"><see cref="DataGrid"/> to set <see cref="SortMemberPathProperty"/> on.</param>
+        /// <param name="value">SortMemberPath property value.</param>
+        public static void SetSortMemberPath(this DataGrid element, string value)
+        {
+            if (element is null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            element.SetValue(TemplateProperty, value);
+        }
+
+        /// <summary>Helper for getting <see cref="SortMemberPathProperty"/> from <paramref name="element"/>.</summary>
+        /// <param name="element"><see cref="DataGrid"/> to read <see cref="SortMemberPathProperty"/> from.</param>
+        /// <returns>SortMemberPath property value.</returns>
+        [AttachedPropertyBrowsableForChildren(IncludeDescendants = false)]
+        [AttachedPropertyBrowsableForType(typeof(DataGrid))]
+        public static string GetSortMemberPath(this DataGrid element)
+        {
+            if (element is null)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
+            var v = (string)element.GetValue(SortMemberPathProperty);
+            return v;
         }
 
         /// <summary>Helper for setting <see cref="TemplateSelectorProperty"/> on <paramref name="element"/>.</summary>
@@ -175,6 +215,17 @@ namespace Gu.Wpf.DataGrid2D
         {
             var dataGrid = (DataGrid)d;
             SetCellTemplateProperty(dataGrid, e, editingTemplate: false);
+            ListenToColumnAutoGeneration(dataGrid);
+        }
+
+        private static void OnSortMemberPathChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var dataGrid = (DataGrid)d;
+            foreach (var column in dataGrid.Columns.OfType<CellTemplateColumn>())
+            {
+                column.SetCurrentValue(DataGridColumn.SortMemberPathProperty, e.NewValue);
+            }
+
             ListenToColumnAutoGeneration(dataGrid);
         }
 
@@ -309,6 +360,7 @@ namespace Gu.Wpf.DataGrid2D
                         CellEditingTemplate = dataGrid.GetEditingTemplate(),
                         CellTemplateSelector = dataGrid.GetTemplateSelector(),
                         CellEditingTemplateSelector = dataGrid.GetEditingTemplateSelector(),
+                        SortMemberPath = dataGrid.GetSortMemberPath(),
                     };
                 }
             }
